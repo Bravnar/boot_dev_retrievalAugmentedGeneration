@@ -1,7 +1,9 @@
 import argparse
-import json
 import string
-from nltk.stem import PorterStemmer
+
+from loaders import load_movies, load_stopwords
+from preprocessing import preprocess_string
+from inverted_index import InvertedIndex
 
 
 def print_search_result(search_result):
@@ -9,21 +11,8 @@ def print_search_result(search_result):
         print(f"{result[0]}. {result[1]}")
 
 
-def preprocess_string(token_string, stopwords=None):
-    tokens = (
-        token_string.lower()
-        .translate(str.maketrans("", "", string.punctuation))
-        .split()
-    )
-    if stopwords is not None:
-        stemmer = PorterStemmer()
-        tokens = [stemmer.stem(t) for t in tokens if t not in stopwords]
-
-    return tokens
-
-
 def search_movies(file_path, query):
-    movie_dict = load_dictionary(file_path)
+    movie_dict = load_movies(file_path)
     search_result = []
     stopwords = load_stopwords("data/stopwords.txt")
     clean_query = preprocess_string(query, " ".join(stopwords))
@@ -37,19 +26,12 @@ def search_movies(file_path, query):
     return search_result
 
 
-def load_dictionary(file_path):
-    with open(file_path) as f:
-        movie_dict = json.load(f)
-    return movie_dict
-
-
-def load_stopwords(file_path):
-    stopwords = set()
-
-    with open(file_path) as f:
-        for line in f:
-            stopwords.update(preprocess_string(line))
-    return stopwords
+def build_command():
+    inverted_index = InvertedIndex()
+    inverted_index.build()
+    inverted_index.save()
+    print(inverted_index.get_documents("merida")[0])
+    return inverted_index
 
 
 def main() -> None:
@@ -59,6 +41,10 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using keywords")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    search_parser = subparsers.add_parser(
+        "build", help="Builds the inverted index and saves it to disk"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -66,7 +52,9 @@ def main() -> None:
             print(f"Searching for: {args.query}")
             results = search_movies("data/movies.json", args.query)
             print_search_result(results)
-            pass
+        case "build":
+            inverted_index = build_command()
+
         case _:
             parser.print_help()
 
