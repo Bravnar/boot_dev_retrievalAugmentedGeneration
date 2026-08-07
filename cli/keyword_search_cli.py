@@ -1,37 +1,42 @@
 import argparse
-import string
 
-from loaders import load_movies, load_stopwords
+from loaders import load_stopwords
 from preprocessing import preprocess_string
 from inverted_index import InvertedIndex
 
 
 def print_search_result(search_result):
-    for result in search_result[:5]:
-        print(f"{result[0]}. {result[1]}")
+    for result in search_result:
+        print(f"{result['id']}. {result['title']}")
 
 
-def search_movies(file_path, query):
-    movie_dict = load_movies(file_path)
-    search_result = []
+def search_movies(query):
+    inverted_index = InvertedIndex()
     stopwords = load_stopwords("data/stopwords.txt")
     clean_query = preprocess_string(query, " ".join(stopwords))
-    print(clean_query)
-    for movie in movie_dict["movies"]:
-        title_translated = (
-            movie["title"].lower().translate(str.maketrans("", "", string.punctuation))
-        )
-        if any(token in title_translated for token in clean_query):
-            search_result.append((movie["id"], movie["title"]))
-    return search_result
+    try:
+        inverted_index.load()
+    except Exception:
+        print("cache not found, try 'build' first")
+        return
+    results = []
+    for token in clean_query:
+        documents = inverted_index.get_documents(token)
+        if not documents:
+            continue
+        for index in documents:
+            results.append(inverted_index.docmap[index])
+            if len(results) == 5:
+                break
+        if len(results) == 5:
+            break
+    return results
 
 
 def build_command():
     inverted_index = InvertedIndex()
     inverted_index.build()
     inverted_index.save()
-    print(inverted_index.get_documents("merida")[0])
-    return inverted_index
 
 
 def main() -> None:
@@ -50,10 +55,10 @@ def main() -> None:
     match args.command:
         case "search":
             print(f"Searching for: {args.query}")
-            results = search_movies("data/movies.json", args.query)
+            results = search_movies(args.query)
             print_search_result(results)
         case "build":
-            inverted_index = build_command()
+            build_command()
 
         case _:
             parser.print_help()
