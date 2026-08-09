@@ -1,3 +1,4 @@
+import math
 import os
 from collections import Counter
 
@@ -5,6 +6,10 @@ from loaders import load_movies, load_stopwords
 from preprocessing import preprocess_string
 
 import pickle
+
+# CONSTANTS
+
+BM25_K1 = 1.5
 
 
 class InvertedIndex:
@@ -25,6 +30,17 @@ class InvertedIndex:
 
     def get_tf(self, doc_id, term):
         return self.term_frequencies[doc_id][term]
+
+    def get_bm25_idf(self, term: str) -> float:
+        N = len(self.docmap)
+        df = len(self.get_documents(term))
+        bm25_idf = math.log((N - df + 0.5) / (df + 0.5) + 1)
+        return bm25_idf
+
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1):
+        raw_tf = self.get_tf(doc_id, term)
+        saturated = (raw_tf * (k1 + 1)) / (raw_tf + k1)
+        return saturated
 
     def get_documents(self, term) -> list[int]:
         index = self.index.get(term)

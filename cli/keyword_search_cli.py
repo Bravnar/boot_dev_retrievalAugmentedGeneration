@@ -3,7 +3,7 @@ import math
 
 from loaders import load_stopwords
 from preprocessing import preprocess_string
-from inverted_index import InvertedIndex
+from inverted_index import BM25_K1, InvertedIndex
 
 
 def load_inverted_index():
@@ -21,7 +21,7 @@ def print_search_result(search_result):
         print(f"{result['id']}. {result['title']}")
 
 
-def search_movies(query):
+def search_command(query):
     inverted_index = load_inverted_index()
     stopwords = load_stopwords("data/stopwords.txt")
     clean_query = preprocess_string(query, " ".join(stopwords))
@@ -63,6 +63,18 @@ def tf_command(doc_id, term):
 
 def tfidf_command(doc_id, term):
     return tf_command(doc_id, term) * idf_command(term)
+
+
+def bm25_idf_command(term):
+    inverted_index = load_inverted_index()
+    token = tokenize_term(term)
+    return inverted_index.get_bm25_idf(token)
+
+
+def bm25_tf_command(doc_id, term):
+    inverted_index = load_inverted_index()
+    token = tokenize_term(term)
+    return inverted_index.get_bm25_tf(doc_id, token)
 
 
 def tokenize_term(term: str) -> str:
@@ -107,16 +119,34 @@ def main() -> None:
     tfidf_parser.add_argument("doc_id", type=str, help="Document ID")
     tfidf_parser.add_argument("term", type=str, help="Term to look up")
 
+    # b25_idf_command
+
+    bm25_idf_parser = subparsers.add_parser(
+        "bm25idf", help="Get BM25 IDF score for a given term"
+    )
+    bm25_idf_parser.add_argument(
+        "term", type=str, help="Term to get BM25 IDF score for"
+    )
+
+    bm25_tf_parser = subparsers.add_parser(
+        "bm25tf", help="Get BM25 TF score for a given document ID and term"
+    )
+    bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
+    bm25_tf_parser.add_argument(
+        "k1", type=float, nargs="?", default=BM25_K1, help="Tunable BM25 K1 parameter"
+    )
+
     args = parser.parse_args()
 
     match args.command:
         case "search":
             print(f"Searching for: {args.query}")
-            results = search_movies(args.query)
+            results = search_command(args.query)
             print_search_result(results)
         case "build":
+            print("Building and indexing movies...")
             build_command()
-
         case "tf":
             print(f"Looking for {args.term} in document {args.doc_id}")
             print(tf_command(int(args.doc_id), args.term))
@@ -129,6 +159,15 @@ def main() -> None:
             print(
                 f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tfidf:.2f}"
             )
+        case "bm25idf":
+            bm25idf = bm25_idf_command(args.term)
+            print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
+        case "bm25tf":
+            bm25tf = bm25_tf_command(args.doc_id, args.term)
+            print(
+                f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}"
+            )
+
         case _:
             parser.print_help()
 
