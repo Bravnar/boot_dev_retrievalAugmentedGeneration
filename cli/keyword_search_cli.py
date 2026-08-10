@@ -84,6 +84,15 @@ def tokenize_term(term: str) -> str:
     return token[0]
 
 
+def bm25search_command(query):
+    inverted_index = load_inverted_index()
+    results = inverted_index.bm25_search(query, 5)
+    for i, result in enumerate(results):
+        print(
+            f"{i + 1}. ({result[0]}) {inverted_index.docmap[result[0]]['title']} - Score: {result[1]:.2f}"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -174,6 +183,8 @@ def main() -> None:
             print(
                 f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}"
             )
+        case "bm25search":
+            bm25search_command(args.query)
 
         case _:
             parser.print_help()

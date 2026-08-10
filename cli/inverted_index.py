@@ -2,7 +2,6 @@ import math
 import os
 from collections import Counter
 
-from cli.keyword_search_cli import tokenize_term
 from loaders import load_movies, load_stopwords
 from preprocessing import preprocess_string
 
@@ -64,7 +63,7 @@ class InvertedIndex:
         return bm25_tf * bm25_idf
 
     def bm25_search(self, query, limit):
-        tokens = preprocess_string(query, load_stopwords("data/stopwords"))
+        tokens = preprocess_string(query, load_stopwords("data/stopwords.txt"))
         scores_dict = dict()
         for doc in self.docmap:
             for token in tokens:
