@@ -3,7 +3,7 @@ import math
 
 from loaders import load_stopwords
 from preprocessing import preprocess_string
-from inverted_index import BM25_K1, InvertedIndex
+from inverted_index import BM25_K1, BM25_B, InvertedIndex
 
 
 def load_inverted_index():
@@ -71,10 +71,10 @@ def bm25_idf_command(term):
     return inverted_index.get_bm25_idf(token)
 
 
-def bm25_tf_command(doc_id, term):
+def bm25_tf_command(doc_id, term, k1, b):
     inverted_index = load_inverted_index()
     token = tokenize_term(term)
-    return inverted_index.get_bm25_tf(doc_id, token)
+    return inverted_index.get_bm25_tf(doc_id, token, k1, b)
 
 
 def tokenize_term(term: str) -> str:
@@ -136,6 +136,13 @@ def main() -> None:
     bm25_tf_parser.add_argument(
         "k1", type=float, nargs="?", default=BM25_K1, help="Tunable BM25 K1 parameter"
     )
+    bm25_tf_parser.add_argument(
+        "b", type=float, nargs="?", default=BM25_B, help="Tunable BM25 b parameter"
+    )
+    bm25search_parser = subparsers.add_parser(
+        "bm25search", help="Search movies using full BM25 scoring"
+    )
+    bm25search_parser.add_argument("query", type=str, help="Search query")
 
     args = parser.parse_args()
 
@@ -163,7 +170,7 @@ def main() -> None:
             bm25idf = bm25_idf_command(args.term)
             print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
         case "bm25tf":
-            bm25tf = bm25_tf_command(args.doc_id, args.term)
+            bm25tf = bm25_tf_command(args.doc_id, args.term, args.k1, args.b)
             print(
                 f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}"
             )
