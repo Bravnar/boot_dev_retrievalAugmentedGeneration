@@ -27,6 +27,14 @@ def embed_text_command(text):
     print(f"Dimensions: {embedding.shape[0]}")
 
 
+def embed_query_text_command(query):
+    semantic_search = SemanticSearch()
+    embedding = semantic_search.generate_embedding(query)
+    print(f"Query: {query}")
+    print(f"First 3 dimensions: {embedding[:3]}")
+    print(f"Shape: {embedding.shape}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -38,6 +46,11 @@ def main() -> None:
 
     subparsers.add_parser("verify_embeddings", help="verifies if embeddings are good")
 
+    embed_query_parser = subparsers.add_parser(
+        "embed_query", help="Embeds a given query"
+    )
+    embed_query_parser.add_argument("query", type=str, help="query to embed")
+
     args = parser.parse_args()
 
     match args.command:
@@ -47,6 +60,8 @@ def main() -> None:
             embed_text_command(args.text)
         case "verify_embeddings":
             verify_embeddings_command()
+        case "embed_query":
+            embed_query_text_command(args.query)
         case _:
             parser.print_help()
 
