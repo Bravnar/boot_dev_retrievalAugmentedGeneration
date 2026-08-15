@@ -4,6 +4,17 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 
 
+def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
+
+
 class SemanticSearch:
     def __init__(self):
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -44,3 +55,27 @@ class SemanticSearch:
             if len(self.embeddings) == len(documents):
                 return self.embeddings
         return self.build_embeddings(documents)
+
+    def search(self, query, limit):
+        if self.embeddings is None:
+            raise ValueError(
+                "No embeddings loaded. Call `load_or_create_embeddings` first."
+            )
+        query_embedding = self.generate_embedding(query)
+        score = []
+        for doc_id, embedding in zip(self.document_map.keys(), self.embeddings):
+            score.append(
+                (
+                    cosine_similarity(query_embedding, embedding),
+                    self.document_map[doc_id],
+                )
+            )
+        sorted_list = sorted(score, key=lambda item: item[0], reverse=True)
+        ret = []
+        for i, elem in enumerate(sorted_list[:limit]):
+            number = i + 1
+            title = f"{elem[1]['title']}"
+            desc = f"{elem[1]['description']}"
+            score = f"({elem[0]:.4f})"
+            ret.append(f"{number}. {title} {score}\n {desc}")
+        return "\n\n-----------------------------------\n\n".join(ret)

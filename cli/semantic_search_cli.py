@@ -35,6 +35,13 @@ def embed_query_text_command(query):
     print(f"Shape: {embedding.shape}")
 
 
+def search_command(query, limit):
+    semantic_search = SemanticSearch()
+    movies = load_movies("data/movies.json")
+    semantic_search.load_or_create_embeddings(movies["movies"])
+    print(semantic_search.search(query, limit))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -51,6 +58,14 @@ def main() -> None:
     )
     embed_query_parser.add_argument("query", type=str, help="query to embed")
 
+    search_parser = subparsers.add_parser(
+        "search", help="semantically searches for a given query"
+    )
+    search_parser.add_argument("query", type=str, help="query to search")
+    search_parser.add_argument(
+        "--limit", type=int, default=5, help="maximum number of results to return"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -62,6 +77,8 @@ def main() -> None:
             verify_embeddings_command()
         case "embed_query":
             embed_query_text_command(args.query)
+        case "search":
+            search_command(args.query, args.limit)
         case _:
             parser.print_help()
 
