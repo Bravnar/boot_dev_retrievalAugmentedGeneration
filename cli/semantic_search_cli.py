@@ -42,6 +42,27 @@ def search_command(query, limit):
     print(semantic_search.search(query, limit))
 
 
+def chunk_command(text, chunk_size):
+    print(chunk_size)
+    split_text = text.split()
+    chars = len(text)
+    length_split_text = len(split_text)
+    chunk_list = []
+    while length_split_text > 0:
+        chunk = []
+        end = chunk_size if length_split_text >= chunk_size else None
+        print(end)
+        for word in split_text[:end]:
+            chunk.append(word)
+        split_text = split_text[end:] if end else []
+        length_split_text = len(split_text)
+        chunk_list.append(" ".join(chunk))
+
+    print(f"Chunking {chars} characters")
+    for i, c in enumerate(chunk_list):
+        print(f"{i + 1}. {c}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -66,6 +87,12 @@ def main() -> None:
         "--limit", type=int, default=5, help="maximum number of results to return"
     )
 
+    chunk_parser = subparsers.add_parser("chunk", help="chunks the given text")
+    chunk_parser.add_argument("text", type=str, help="text to chunk")
+    chunk_parser.add_argument(
+        "--chunk-size", type=int, default=200, help="size of chunks needed"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -79,6 +106,8 @@ def main() -> None:
             embed_query_text_command(args.query)
         case "search":
             search_command(args.query, args.limit)
+        case "chunk":
+            chunk_command(args.text, args.chunk_size)
         case _:
             parser.print_help()
 
