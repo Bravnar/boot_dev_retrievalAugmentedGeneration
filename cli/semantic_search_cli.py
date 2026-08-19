@@ -42,25 +42,50 @@ def search_command(query, limit):
     print(semantic_search.search(query, limit))
 
 
-def chunk_command(text, chunk_size):
-    print(chunk_size)
-    split_text = text.split()
-    chars = len(text)
-    length_split_text = len(split_text)
-    chunk_list = []
-    while length_split_text > 0:
-        chunk = []
-        end = chunk_size if length_split_text >= chunk_size else None
-        print(end)
-        for word in split_text[:end]:
-            chunk.append(word)
-        split_text = split_text[end:] if end else []
-        length_split_text = len(split_text)
-        chunk_list.append(" ".join(chunk))
+def chunk_command(text, chunk_size, overlap):
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than 0")
 
-    print(f"Chunking {chars} characters")
-    for i, c in enumerate(chunk_list):
-        print(f"{i + 1}. {c}")
+    if overlap < 0 or overlap >= chunk_size:
+        raise ValueError("overlap must be between 0 and chunk_size - 1")
+
+    words = text.split()
+    chunks = []
+    step = chunk_size - overlap
+
+    for start in range(0, len(words), step):
+        chunk_words = words[start : start + chunk_size]
+
+        if not chunk_words:
+            break
+
+        chunks.append(" ".join(chunk_words))
+
+        if start + chunk_size >= len(words):
+            break
+    print(f"Chunking {len(text)} characters")
+    for i, chunk in enumerate(chunks, start=1):
+        print(f"{i}. {chunk}")
+
+    # def chunk_command(text, chunk_size):
+    #     print(chunk_size)
+    #     split_text = text.split()
+    #     chars = len(text)
+    #     length_split_text = len(split_text)
+    #     chunk_list = []
+    #     while length_split_text > 0:
+    #         chunk = []
+    #         end = chunk_size if length_split_text >= chunk_size else None
+    #         print(end)
+    #         for word in split_text[:end]:
+    #             chunk.append(word)
+    #         split_text = split_text[end:] if end else []
+    #         length_split_text = len(split_text)
+    #         chunk_list.append(" ".join(chunk))
+
+    # print(f"Chunking {chars} characters")
+    # for i, c in enumerate(chunk_list):
+    #     print(f"{i + 1}. {c}")
 
 
 def main() -> None:
@@ -92,6 +117,12 @@ def main() -> None:
     chunk_parser.add_argument(
         "--chunk-size", type=int, default=200, help="size of chunks needed"
     )
+    chunk_parser.add_argument(
+        "--overlap",
+        type=int,
+        default=0,
+        help="number of words shared between consecutive chunks",
+    )
 
     args = parser.parse_args()
 
@@ -107,7 +138,7 @@ def main() -> None:
         case "search":
             search_command(args.query, args.limit)
         case "chunk":
-            chunk_command(args.text, args.chunk_size)
+            chunk_command(args.text, args.chunk_size, args.overlap)
         case _:
             parser.print_help()
 
